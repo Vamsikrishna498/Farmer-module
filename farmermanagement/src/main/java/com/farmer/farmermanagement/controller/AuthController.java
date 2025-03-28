@@ -34,8 +34,8 @@ public class AuthController {
     }
 
     @PostMapping("/verify-otp")
-    public ResponseEntity<String> verifyOtp(@RequestParam String emailOrPhone, @RequestParam String otp) {
-        if (otpService.verifyOtp(emailOrPhone, otp)) {
+    public ResponseEntity<String> verifyOtp(@RequestParam String idToken) {
+        if (otpService.verifyOtp(idToken)) {
             return ResponseEntity.ok("OTP verified successfully.");
         } else {
             return ResponseEntity.badRequest().body("Invalid or expired OTP.");
@@ -51,4 +51,3 @@ public class AuthController {
         }
     }
 }
-

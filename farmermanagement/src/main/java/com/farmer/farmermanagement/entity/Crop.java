@@ -1,7 +1,6 @@
 package com.farmer.farmermanagement.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.farmer.farmermanagement.dto.FarmerDTO;
 import com.farmer.farmermanagement.enums.CropType;
 import com.farmer.farmermanagement.enums.IrrigationSource;
 import com.farmer.farmermanagement.enums.SoilTest;

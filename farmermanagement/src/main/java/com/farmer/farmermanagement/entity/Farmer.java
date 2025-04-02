@@ -132,6 +132,4 @@ public class Farmer {
     @JoinColumn(name = "land_details_id")
     private LandDetails landDetails;
 
-
-
 }

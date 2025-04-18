@@ -39,8 +39,6 @@ public class BankDetails {
     private String ifscCode;
 
     private String passbookAttachment;
-
-    // 🔹 Fix circular dependency using mappedBy & avoiding direct reference
     @OneToOne(mappedBy = "bankDetails", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private Farmer farmer;
 }

@@ -1,9 +1,14 @@
-package com.farmer.farmermanagement.service;
+
+package com.farmer.farmermanagement;
+
 
 import com.farmer.farmermanagement.dto.UserDTO;
 import com.farmer.farmermanagement.entity.User;
 import com.farmer.farmermanagement.exception.UserNotFoundException;
 import com.farmer.farmermanagement.repository.UserRepository;
+import com.farmer.farmermanagement.service.OtpService;
+import com.farmer.farmermanagement.service.UserService;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

@@ -22,6 +22,7 @@ public class OtpService {
     private final Map<String, String> otpStore = new ConcurrentHashMap<>();
 
     // Used only if you're doing Firebase ID token verification (not manual OTP)
+
     public boolean verifyOtp(String idToken) {
         try {
             FirebaseToken decodedToken = firebaseAuth.verifyIdToken(idToken);
@@ -44,6 +45,7 @@ public class OtpService {
             return null;
         }
     }
+
     public String generateAndSendOtp(String phoneNumber) {
         String otp = String.valueOf((int) (Math.random() * 1000000));
         log.info("Generated OTP for phone {}: {}", phoneNumber, otp);

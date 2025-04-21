@@ -15,6 +15,7 @@ public class OtpController {
     @PostMapping("/generate")
     public ResponseEntity<String> generateOtp(@RequestParam String phoneNumber) {
         return ResponseEntity.ok(otpService.generateAndSendOtp(phoneNumber));
+<<<<<<< HEAD
     // Generate and send OTP to the phone number
     @PostMapping("/generate")
     public ResponseEntity<String> generateOtp(@RequestParam String phoneNumber) {
@@ -55,5 +56,7 @@ public class OtpController {
         public void setOtp(String otp) {
             this.otp = otp;
         }
+=======
+>>>>>>> master
     }
 }

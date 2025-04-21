@@ -11,6 +11,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 public class OtpServiceTest {
+
     private FirebaseAuth firebaseAuth;
     private OtpService otpService;
 
@@ -35,34 +36,23 @@ public class OtpServiceTest {
 
     @Test
     void verifyOtpShouldReturnTrueForValidIdToken() throws FirebaseAuthException {
-        String mockIdToken = "mock-token";
+        String mockIdToken = "valid-token";
         FirebaseToken mockFirebaseToken = mock(FirebaseToken.class);
 
         when(firebaseAuth.verifyIdToken(mockIdToken)).thenReturn(mockFirebaseToken);
 
         boolean result = otpService.verifyOtp(mockIdToken);
-    void testVerifyOtp_validToken_returnsTrue() throws Exception {
-        FirebaseToken mockToken = mock(FirebaseToken.class);
-        when(firebaseAuth.verifyIdToken("valid_token")).thenReturn(mockToken);
-
-        boolean result = otpService.verifyOtp("valid_token");
-
         assertTrue(result);
     }
 
     @Test
     void verifyOtpShouldReturnFalseForInvalidIdToken() throws FirebaseAuthException {
-        String mockIdToken = "bad-token";
+        String mockIdToken = "invalid-token";
         FirebaseAuthException mockedException = mock(FirebaseAuthException.class);
 
         when(firebaseAuth.verifyIdToken(mockIdToken)).thenThrow(mockedException);
 
         boolean result = otpService.verifyOtp(mockIdToken);
-    void testVerifyOtp_invalidToken_returnsFalse() throws Exception {
-        FirebaseAuthException mockException = mock(FirebaseAuthException.class);
-        when(firebaseAuth.verifyIdToken("invalid_token")).thenThrow(mockException);
-
-        boolean result = otpService.verifyOtp("invalid_token");
         assertFalse(result);
     }
 
@@ -77,7 +67,7 @@ public class OtpServiceTest {
 
     @Test
     void getUserEmailOrPhoneFromTokenShouldReturnEmail() throws FirebaseAuthException {
-        String idToken = "mock-token";
+        String idToken = "valid-token";
         FirebaseToken token = mock(FirebaseToken.class);
 
         when(token.getEmail()).thenReturn("test@example.com");
@@ -97,23 +87,6 @@ public class OtpServiceTest {
         String result = otpService.getUserEmailOrPhoneFromToken(badToken);
         assertNull(result);
     }
-    void testGetUserEmailOrPhoneFromToken_validToken_returnsEmail() throws Exception {
-        FirebaseToken mockToken = mock(FirebaseToken.class);
-        when(mockToken.getEmail()).thenReturn("test@example.com");
-        when(firebaseAuth.verifyIdToken("valid_token")).thenReturn(mockToken);
-
-        String email = otpService.getUserEmailOrPhoneFromToken("valid_token");
-        assertEquals("test@example.com", email);
-    }
-
-    @Test
-    void testGetUserEmailOrPhoneFromToken_invalidToken_returnsNull() throws Exception {
-        FirebaseAuthException mockException = mock(FirebaseAuthException.class);
-        when(firebaseAuth.verifyIdToken("bad_token")).thenThrow(mockException);
-
-        String result = otpService.getUserEmailOrPhoneFromToken("bad_token");
-        assertNull(result);
-    }
 
     @Test
     void testGenerateAndSendOtp_returnsValidOtp() {
@@ -121,6 +94,6 @@ public class OtpServiceTest {
         String otp = otpService.generateAndSendOtp(phoneNumber);
 
         assertNotNull(otp);
-        assertTrue(otp.matches("\\d{1,6}"));  // Matches 1 to 6 digits
+        assertTrue(otp.matches("\\d{6}"));  // Matches exactly 6 digits
     }
 }

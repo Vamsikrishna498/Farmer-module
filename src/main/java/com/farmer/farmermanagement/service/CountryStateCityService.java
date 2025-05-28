@@ -1,5 +1,6 @@
 package com.farmer.farmermanagement.service;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -8,8 +9,9 @@ import org.springframework.web.client.RestTemplate;
 
 @Service
 public class CountryStateCityService {
-	private final String API_KEY = "dU42OW45M2NxNXhranc2U2pwS2VXdlE3cHpCWW1GS0pnQ3RkeGVhRg=="; // Replace with your
-																								// actual API key
+	@Value("${countrystatecity.api.key}")
+	private String API_KEY;
+	// actual API key
 	private final String BASE_URL = "https://api.countrystatecity.in/v1/";
 
 	private RestTemplate restTemplate = new RestTemplate();

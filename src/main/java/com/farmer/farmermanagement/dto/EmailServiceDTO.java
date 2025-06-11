@@ -1,5 +1,9 @@
 package com.farmer.farmermanagement.dto;
 
+import lombok.Builder;
+
+@Builder
+
 public class EmailServiceDTO {
 
     private String to; // recipient's email address

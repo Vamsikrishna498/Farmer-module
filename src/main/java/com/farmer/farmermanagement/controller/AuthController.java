@@ -7,15 +7,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.farmer.farmermanagement.dto.LoginRequest;
+import com.farmer.farmermanagement.dto.ResetPasswordDTO;
 import com.farmer.farmermanagement.dto.UserDTO;
 import com.farmer.farmermanagement.dto.UserResponseDTO;
 import com.farmer.farmermanagement.entity.User;
@@ -34,99 +29,175 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AuthController {
 
-	private final AuthenticationManager authenticationManager;
-	private final JwtUtil jwtUtil;
-	private final UserService userService;
-	private final OtpService otpService;
-	private final EmailService emailService;
-	private final CountryStateCityService countryService;
+    private final AuthenticationManager authenticationManager;
+    private final JwtUtil jwtUtil;
+    private final UserService userService;
+    private final OtpService otpService;
+    private final EmailService emailService;
+    private final CountryStateCityService countryService;
 
-	@PostMapping("/login")
-	public ResponseEntity<String> login(@RequestBody LoginRequest request) {
-		try {
-			Authentication authentication = authenticationManager.authenticate(
-					new UsernamePasswordAuthenticationToken(request.getUserName(), request.getPassword()));
-			String token = jwtUtil.generateToken(authentication);
+    // Login endpoint
+    @PostMapping("/login")
+    public ResponseEntity<String> login(@RequestBody @Valid LoginRequest request) {
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getUserName(), request.getPassword()));
+            String token = jwtUtil.generateToken(authentication);
 
-			HttpHeaders headers = new HttpHeaders();
-			headers.set("Authorization", "Bearer " + token);
-			return ResponseEntity.ok().headers(headers).body("logged in successfully");
-		} catch (Exception e) {
-			return ResponseEntity.status(HttpServletResponse.SC_UNAUTHORIZED).body("Login failed: " + e.getMessage());
-		}
-	}
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Authorization", "Bearer " + token);
 
-	@PostMapping("/register")
-	public ResponseEntity<UserResponseDTO> registerUser(@Valid @RequestBody UserDTO userDTO) {
-		User user = userService.registerUser(userDTO);
-		return ResponseEntity.ok(UserResponseDTO.fromEntity(user, "User registered successfully."));
-	}
+            return ResponseEntity.ok().headers(headers).body("Logged in successfully");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpServletResponse.SC_UNAUTHORIZED)
+                    .body("Login failed: " + e.getMessage());
+        }
+    }
 
-	@PostMapping("/send-otp")
-	public ResponseEntity<String> sendOtp(@RequestBody Map<String, String> request) {
-		String emailOrPhone = request.get("emailOrPhone");
-		try {
-			String otp = otpService.generateAndSendOtp(emailOrPhone);
-			emailService.sendOtpEmail(emailOrPhone, otp);
-			return ResponseEntity.ok("OTP sent successfully to " + emailOrPhone);
-		} catch (Exception e) {
-			return ResponseEntity.status(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
-					.body("Failed to send OTP: " + e.getMessage());
-		}
-	}
+    // Registration endpoint
+    @PostMapping("/register")
+    public ResponseEntity<UserResponseDTO> registerUser(@Valid @RequestBody UserDTO userDTO) {
+        User user = userService.registerUser(userDTO);
+        return ResponseEntity.ok(UserResponseDTO.fromEntity(user, "User registered successfully."));
+    }
 
-	@PostMapping("/verify-otp")
-	public ResponseEntity<String> verifyOtp(@RequestBody Map<String, String> request) {
-		String email = request.get("email");
-		String otp = request.get("otp");
+    // Send OTP endpoint
+    @PostMapping("/send-otp")
+    public ResponseEntity<String> sendOtp(@RequestBody Map<String, String> request) {
+        String emailOrPhone = request.get("emailOrPhone");
+        if (emailOrPhone == null || emailOrPhone.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("Email or phone number is required.");
+        }
+        String otp = otpService.generateAndSendOtp(emailOrPhone);
+        emailService.sendOtpEmail(emailOrPhone, otp); // Currently sends email only
+        return ResponseEntity.ok("OTP sent successfully to your registered email.");
+    }
 
-		if (otpService.verifyOtp(email, otp)) {
-			return ResponseEntity.ok("OTP verified successfully.");
-		} else {
-			return ResponseEntity.badRequest().body("Invalid or expired OTP.");
-		}
-	}
+    // Verify OTP endpoint
+    @PostMapping("/verify-otp")
+    public ResponseEntity<String> verifyOtp(@RequestBody Map<String, String> request) {
+        String emailOrPhone = request.get("emailOrPhone");
+        String otp = request.get("otp");
 
-	@PostMapping("/forgot-user-id")
-	public ResponseEntity<String> forgotUserId(@RequestParam String emailOrPhone) {
-		try {
-			return ResponseEntity.ok(userService.forgotUserId(emailOrPhone));
-		} catch (Exception e) {
-			return ResponseEntity.badRequest().body("Failed to send user ID: " + e.getMessage());
-		}
-	}
+        if (emailOrPhone == null || emailOrPhone.trim().isEmpty() || otp == null || otp.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("Email/Phone and OTP are required.");
+        }
 
-	@PostMapping("/forgot-password")
-	public ResponseEntity<String> forgotPassword(@RequestParam String emailOrPhone) {
-		return ResponseEntity.ok(userService.forgotPassword(emailOrPhone));
-	}
+        if (otpService.verifyOtp(emailOrPhone, otp)) {
+            return ResponseEntity.ok("OTP verified successfully.");
+        } else {
+            return ResponseEntity.badRequest().body("Invalid or expired OTP.");
+        }
+    }
 
-	@PostMapping("/reset-password")
-	public ResponseEntity<String> resetPassword(@RequestParam String emailOrPhone, @RequestParam String otp,
-			@RequestParam String newPassword) {
-		if (userService.verifyOtpAndResetPassword(emailOrPhone, otp, newPassword)) {
-			return ResponseEntity.ok("Password reset successfully.");
-		}
-		return ResponseEntity.badRequest().body("Invalid OTP or expired OTP.");
-	}
+    // Forgot User ID
+    @PostMapping("/forgot-user-id")
+    public ResponseEntity<String> forgotUserId(@RequestBody Map<String, String> request) {
+        String emailOrPhone = request.get("emailOrPhone");
+        if (emailOrPhone == null || emailOrPhone.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("Email or phone number is required.");
+        }
+        String result = userService.forgotUserId(emailOrPhone);
+        return ResponseEntity.ok(result);
+    }
 
-	@GetMapping("/countries")
-	public String getCountries() {
-		return countryService.getCountries();
-	}
+    // Forgot password - sends OTP
+    @PostMapping("/forgot-password")
+    public ResponseEntity<String> forgotPassword(@RequestBody Map<String, String> request) {
+        String emailOrPhone = request.get("emailOrPhone");
+        if (emailOrPhone == null || emailOrPhone.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("Email or phone number is required.");
+        }
 
-	@GetMapping("/states/{countryCode}")
-	public String getStates(@PathVariable String countryCode) {
-		return countryService.getStates(countryCode);
-	}
+        // Generate OTP for password reset
+        String otp = otpService.generateAndSendOtp(emailOrPhone);
 
-	@GetMapping("/districts/{countryCode}/{stateCode}")
-	public String getDistricts(@PathVariable String countryCode, @PathVariable String stateCode) {
-		return countryService.getDistricts(countryCode, stateCode);
-	}
+        // Send OTP email
+        emailService.sendOtpEmail(emailOrPhone,
+                "Your password reset OTP is: " + otp +
+                ". Use this OTP to reset your password. It is valid for 10 minutes.");
 
-	@GetMapping("/test")
-	public String test() {
-		return "this is a test endpoint";
-	}
+        return ResponseEntity.ok("Password reset OTP sent successfully to your registered email or phone.");
+    }
+
+    // Reset password with OTP - generate OTP
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> sendResetPasswordOtp(@RequestBody Map<String, String> request) {
+        String emailOrPhone = request.get("emailOrPhone");
+        if (emailOrPhone == null || emailOrPhone.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("Email or phone number is required.");
+        }
+
+        String otp = otpService.generateAndSendOtp(emailOrPhone.trim());
+
+        emailService.sendOtpEmail(emailOrPhone.trim(),
+                "Your OTP for password reset is: " + otp + ". It is valid for 10 minutes.");
+
+        return ResponseEntity.ok("Password reset OTP sent successfully to your registered email or phone.");
+    }
+
+    // Confirm password reset with OTP and new password
+    @PostMapping("/reset-password/confirm")
+    public ResponseEntity<String> confirmResetPassword(@RequestBody ResetPasswordDTO request) {
+
+        if (request.getEmailOrPhone() == null || request.getOtp() == null || request.getNewPassword() == null ||
+            request.getEmailOrPhone().trim().isEmpty() || request.getOtp().trim().isEmpty() || request.getNewPassword().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("All fields are required.");
+        }
+
+        boolean resetSuccess = userService.verifyOtpAndResetPassword(
+            request.getEmailOrPhone().trim(),
+            request.getOtp().trim(),
+            request.getNewPassword());
+
+        if (resetSuccess) {
+            emailService.sendEmail(
+                new com.farmer.farmermanagement.dto.EmailServiceDTO(
+                    request.getEmailOrPhone().trim(),
+                    "Password Reset Successful",
+                    "Dear user,\n\nYour password has been changed successfully. If you did not perform this action, please contact support immediately.\n\nRegards,\nDigitalAgristack Team"
+                )
+            );
+            return ResponseEntity.ok("Password reset successfully.");
+        } else {
+            return ResponseEntity.badRequest().body("Invalid or expired OTP.");
+        }
+    }
+
+    // Get countries
+    @GetMapping("/countries")
+    public ResponseEntity<String> getCountries() {
+        return ResponseEntity.ok(countryService.getCountries());
+    }
+
+    // Get states by countryCode
+    @GetMapping("/states/{countryCode}")
+    public ResponseEntity<String> getStates(@PathVariable String countryCode) {
+        return ResponseEntity.ok(countryService.getStates(countryCode));
+    }
+
+    // Get districts by countryCode and stateCode
+    @GetMapping("/districts/{countryCode}/{stateCode}")
+    public ResponseEntity<String> getDistricts(@PathVariable String countryCode, @PathVariable String stateCode) {
+        return ResponseEntity.ok(countryService.getDistricts(countryCode, stateCode));
+    }
+
+    // New endpoint - Get address by ZIP (using countryCode + postalCode)
+    @GetMapping("/address-by-zip/{countryCode}/{postalCode}")
+    public ResponseEntity<String> getAddressByZip(
+            @PathVariable String countryCode,
+            @PathVariable String postalCode) {
+        try {
+            String addressData = countryService.getZipAddressByCountryAndPostalCode(countryCode, postalCode);
+            return ResponseEntity.ok(addressData);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Failed to fetch address details: " + e.getMessage());
+        }
+    }
+
+    // Test endpoint
+    @GetMapping("/test")
+    public String test() {
+        return "This is a test endpoint.";
+    }
 }

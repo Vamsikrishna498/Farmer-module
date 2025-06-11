@@ -2,64 +2,51 @@ package com.farmer.farmermanagement.entity;
 
 import java.time.LocalDate;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.persistence.*;
+import lombok.*;
 
 @Entity
 @Table(name = "users")
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Data
-
 public class User {
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-	@Column(nullable = false)
-	private String firstName;
+    @Column(nullable = false)
+    private String firstName;
 
-	@Column(nullable = false)
-	private String lastName;
+    @Column(nullable = false)
+    private String lastName;
 
-	@Column(unique = true, nullable = false)
-	private String email;
+    @Column(unique = true, nullable = false)
+    private String email;
 
-	@Column(unique = true, nullable = false)
-	private String phoneNumber;
+    @Column(unique = true, nullable = false)
+    private String phoneNumber;
 
-	@Column(nullable = false)
-	private String password; // Ensure this is hashed when storing in DB
+    @Column(nullable = false)
+    private String password; // Ensure this is hashed before saving
 
-	@Column(nullable = true)
-	private LocalDate dateOfBirth; // ✅ Change String to LocalDate
+    @Column
+    private LocalDate dateOfBirth; // Prefer LocalDate over String
 
-	@Column(nullable = true)
-	private String gender;
+    @Column
+    private String gender;
 
-	@Column(nullable = true)
-	private String country;
+    @Column
+    private String country;
 
-	@Column(nullable = true)
-	private String state;
+    @Column
+    private String state;
 
-	@Column(nullable = true)
-	private String pinCode;
+    @Column
+    private String pinCode;
 
-	@Column(nullable = true)
-	private String timeZone;
+    @Column
+    private String timeZone;
 }

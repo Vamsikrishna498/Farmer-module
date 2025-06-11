@@ -1,12 +1,13 @@
 package com.farmer.farmermanagement.service;
 
-import java.util.Optional;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.farmer.farmermanagement.dto.EmailServiceDTO;
 import com.farmer.farmermanagement.dto.UserDTO;
 import com.farmer.farmermanagement.entity.User;
+import com.farmer.farmermanagement.exception.UserAlreadyExistsException;
 import com.farmer.farmermanagement.exception.UserNotFoundException;
 import com.farmer.farmermanagement.mapper.UserMapper;
 import com.farmer.farmermanagement.repository.UserRepository;
@@ -19,75 +20,117 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class UserService {
 
-	private final UserRepository userRepository;
-	private final OtpService otpService; // Using Firebase OTP service
-	private final PasswordEncoder passwordEncoder;
-	private final UserMapper userMapper;
+    private final UserRepository userRepository;
+    private final OtpService otpService;
+    private final PasswordEncoder passwordEncoder;
+    private final UserMapper userMapper;
+    private final EmailService emailService;
 
-	public User registerUser(UserDTO userDTO) {
-		log.info("Registering user with email: {}", userDTO.getEmail());
-		User user = userMapper.toEntity(userDTO);
-		user.setPassword(passwordEncoder.encode(user.getPassword()));
-		User savedUser = userRepository.save(user);
-		log.info("User registered successfully with ID: {}", savedUser.getId());
-		return savedUser;
-	}
+    // Register a new user
+    public User registerUser(UserDTO userDTO) {
+        log.info("Registering user with email: {}", userDTO.getEmail());
 
-	// ✅ Forgot Password - Sends OTP
-	public String forgotPassword(String emailOrPhone) {
-		log.info("Processing forgot password for: {}", emailOrPhone);
+        userRepository.findByEmail(userDTO.getEmail()).ifPresent(user -> {
+            log.warn("Attempted registration with existing email: {}", userDTO.getEmail());
+            throw new UserAlreadyExistsException("Email already registered: " + userDTO.getEmail());
+        });
 
-		Optional<User> user = userRepository.findByEmailOrPhoneNumber(emailOrPhone, emailOrPhone);
-		if (user.isEmpty()) {
-			log.warn("User not found for forgot password request: {}", emailOrPhone);
-			throw new UserNotFoundException("User not found with given email or phone number.");
-		}
+        User user = userMapper.toEntity(userDTO);
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        User savedUser = userRepository.save(user);
 
-		// Send OTP using Firebase
-		String otpResponse = otpService.generateAndSendOtp(emailOrPhone); // Firebase OTP method
-		log.info("OTP sent for forgot password: {}", otpResponse);
-		return otpResponse;
-	}
+        log.info("User registered successfully with ID: {}", savedUser.getId());
 
-	// ✅ Forgot User ID - Sends OTP
-	public String forgotUserId(String emailOrPhone) {
-		log.info("Processing forgot user ID request for: {}", emailOrPhone);
+        try {
+            emailService.sendRegistrationEmail(savedUser.getEmail(), savedUser.getFirstName());
+            log.info("Registration email sent to {}", savedUser.getEmail());
+        } catch (Exception e) {
+            log.error("Failed to send registration email to {}: {}", savedUser.getEmail(), e.getMessage());
+        }
 
-		Optional<User> user = userRepository.findByEmailOrPhoneNumber(emailOrPhone, emailOrPhone);
-		if (user.isEmpty()) {
-			log.warn("User not found for forgot user ID request: {}", emailOrPhone);
-			throw new UserNotFoundException("User not found.");
-		}
+        return savedUser;
+    }
 
-		// Send OTP using Firebase
-		String otpResponse = otpService.generateAndSendOtp(emailOrPhone); // Firebase OTP method
-		log.info("OTP sent for forgot user ID: {}", otpResponse);
-		return otpResponse;
-	}
+    // Forgot User ID via email or phone
+    public String forgotUserId(String emailOrPhone) {
+        log.info("Forgot user ID request for: {}", emailOrPhone);
 
-	// ✅ Verify OTP and Reset Password
-	public boolean verifyOtpAndResetPassword(String idToken, String emailOrPhone, String newPassword) {
-		log.info("Verifying OTP for password reset.");
+        User user = findUserByEmailOrPhone(emailOrPhone);
 
-		// Verify OTP using Firebase token
-		if (otpService.verifyOtp(idToken)) { // Firebase OTP verification
-			User user = userRepository.findByEmailOrPhoneNumber(emailOrPhone, emailOrPhone).orElseThrow(() -> {
-				log.warn("User not found for OTP verification: {}", emailOrPhone);
-				return new UserNotFoundException("User not found.");
-			});
+        try {
+            emailService.sendUserIdEmail(user.getEmail(), String.valueOf(user.getId()));
+            log.info("User ID email sent to {}", user.getEmail());
+        } catch (Exception e) {
+            log.error("Failed to send user ID email to {}: {}", user.getEmail(), e.getMessage());
+            throw new RuntimeException("Failed to send user ID email.");
+        }
 
-			user.setPassword(passwordEncoder.encode(newPassword));
-			userRepository.save(user);
+        return "User ID sent to your registered email.";
+    }
 
-			log.info("Password reset successful for user: {}", emailOrPhone);
-			return true;
-		}
-		log.warn("Invalid or expired OTP.");
-		return false;
-	}
+    // Forgot Password - send OTP
+    public String forgotPassword(String emailOrPhone) {
+        log.info("Forgot password request for: {}", emailOrPhone);
 
-//    // ✅ Extract user email or phone from Firebase token
-//    private String extractUserIdentifierFromToken(String idToken) {
-//        return otpService.getUserEmailOrPhoneFromToken(idToken);  // Extract from Firebase token
-//    }
+        User user = findUserByEmailOrPhone(emailOrPhone);
+
+        String otp = otpService.generateAndSendOtp(user.getEmail());
+
+        try {
+            emailService.sendOtpEmail(user.getEmail(), otp);
+            log.info("OTP sent to {}", user.getEmail());
+        } catch (Exception e) {
+            log.error("Failed to send OTP email to {}: {}", user.getEmail(), e.getMessage());
+            throw new RuntimeException("Failed to send OTP email.");
+        }
+
+        return "OTP sent successfully to your registered email.";
+    }
+
+    // Verify OTP and reset password (no invalidateOtp call needed)
+    public boolean verifyOtpAndResetPassword(String emailOrPhone, String otp, String newPassword) {
+        log.info("Verifying OTP and resetting password for: {}", emailOrPhone);
+
+        if (!otpService.verifyOtp(emailOrPhone, otp)) {
+            log.warn("Invalid or expired OTP for: {}", emailOrPhone);
+            return false;
+        }
+
+        User user = findUserByEmailOrPhone(emailOrPhone);
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        log.info("Password reset successfully for user: {}", emailOrPhone);
+
+        // Send password reset confirmation email
+        try {
+            String subject = "Password Reset Confirmation";
+            String body = "Dear " + (user.getFirstName() != null ? user.getFirstName() : "User") + ",\n\n"
+                    + "Your password has been changed successfully.\n"
+                    + "If you did not perform this action, please contact support immediately.\n\n"
+                    + "Regards,\nFarmer Management Team";
+
+            EmailServiceDTO emailDto = EmailServiceDTO.builder()
+                    .to(user.getEmail())
+                    .subject(subject)
+                    .body(body)
+                    .build();
+
+            emailService.sendEmail(emailDto);
+
+            log.info("Password reset confirmation email sent to {}", user.getEmail());
+        } catch (Exception e) {
+            log.error("Failed to send password reset confirmation email to {}: {}", user.getEmail(), e.getMessage());
+        }
+
+        return true;
+    }
+
+    // Helper method to find user by email or phone
+    private User findUserByEmailOrPhone(String emailOrPhone) {
+        return userRepository.findByEmail(emailOrPhone)
+                .or(() -> userRepository.findByPhoneNumber(emailOrPhone))
+                .orElseThrow(() ->
+                        new UserNotFoundException("User not found with email or phone: " + emailOrPhone));
+    }
 }

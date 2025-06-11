@@ -40,12 +40,21 @@ public class UserDTO {
     private String state;
 
     @NotBlank(message = "PIN code is required.")
-    @Pattern(regexp = "^[0-9]{6}$", message = "PIN code must be 6 digits.")
+    @Pattern(regexp = "^[1-9][0-9]{5}$", message = "PIN code must be 6 digits and should not start with 0.")
     private String pinCode;
 
     @NotBlank(message = "Time zone is required.")
     private String timeZone;
 
-    public String getEmail() { return email; }
-public String getPhoneNumber() { return phoneNumber; }
+    // Optional: auto-filled fields (if you want to support them as DTO-level mapping)
+    private String district;
+    private String postOffice;
+
+    public String getEmail() {
+        return email;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
 }

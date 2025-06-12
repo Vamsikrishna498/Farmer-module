@@ -1,74 +1,138 @@
 package com.farmer.farmermanagement.dto;
 
-import java.time.LocalDate;
-import java.util.List;
-
-import com.farmer.farmermanagement.enums.Document;
-import com.farmer.farmermanagement.enums.Education;
-import com.farmer.farmermanagement.enums.Gender;
-import com.farmer.farmermanagement.enums.PortalAccess;
-import com.farmer.farmermanagement.enums.PortalRole;
-
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
+import com.farmer.farmermanagement.enums.*;
+import jakarta.validation.constraints.*;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.util.Date;
+import java.util.List;
 
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-public class FarmerDto {
+public class FarmerDTO {
 
-	private Long id;
+    private Long id;
 
-	@NotBlank
-	private String firstName;
+    @NotBlank(message = "Photo is required")
+    private String photo;
 
-	private String MiddleName;
+    @NotBlank(message = "Salutation is required")
+    private String salutation;
 
-	@NotBlank
-	private String lastName;
+    @NotBlank(message = "First name is required")
+    private String firstName;
 
-	@NotBlank
-	private String aadharNumber;
+    private String middleName;
+    private String lastName;
 
-	@Email
-	@NotBlank
-	private String email;
+    @NotNull(message = "Gender is required")
+    private Gender gender;
 
-	@NotBlank
-	private String phoneNumber;
+    @NotBlank(message = "Nationality is required")
+    private String nationality;
 
-	@NotNull
-	private Gender gender;
+    @NotNull(message = "Date of birth is required")
+    @Past(message = "Date of birth must be in the past")
+    private Date dateOfBirth;
 
-	@NotNull
-	private Education education;
+    @Pattern(regexp = "\\d{10}", message = "Contact number must be exactly 10 digits")
+    private String phoneNumber;
 
-	private Document document;
+    private String relationshipType;
 
-	@NotBlank
-	private String documentPath;
+    @NotBlank(message = "Father name is required")
+    private String fatherName;
 
-	@NotNull
-	private LocalDate dateOfBirth;
+    @NotBlank(message = "Alternative number is required")
+    @Pattern(regexp = "\\d{10}", message = "Alternative number must be exactly 10 digits")
+    private String alternativeNumber;
 
-	private PortalAccess portalAccess;
+    @NotBlank(message = "Alternative no. type is required")
+    private String alternativeNoType;
 
-	private PortalRole portalRole;
+    @NotBlank(message = "Country is required")
+    private String country;
 
-	@NotBlank
-	private String farmerType;
+    @NotBlank(message = "State is required")
+    private String state;
 
-	private AddressDto address;
+    @NotBlank(message = "District is required")
+    private String district;
 
-	private BankDetailsDto bankDetails;
+    @NotBlank(message = "Block is required")
+    private String block;
 
-	private LandDetailsDto landDetails;
+    @NotBlank(message = "Village is required")
+    private String village;
 
-	private List<CropDto> crops;
+    @NotBlank(message = "Zipcode is required")
+    @Pattern(regexp = "\\d{5,6}", message = "Zipcode must be 5 or 6 digits")
+    private String zipcode;
+
+    @NotNull(message = "Education is required")
+    private Education education;
+
+    @Min(value = 0, message = "Farming experience cannot be negative")
+    private int farmingExperience;
+
+    @DecimalMin(value = "0.0", inclusive = true, message = "Net income cannot be negative")
+    private double netIncome;
+
+    @NotNull(message = "Document type is required")
+    private Document document;
+
+    @NotBlank(message = "Document path is required")
+    private String documentPath;
+
+    @NotBlank(message = "Farmer type is required")
+    private String farmerType;
+
+    @NotNull(message = "Portal role is required")
+    private PortalRole portalRole;
+
+    @NotNull(message = "Portal access is required")
+    private PortalAccess portalAccess;
+
+    private AddressDto address;
+
+    private List<BankDetailsDTO> bankDetails;
+    private List<LandDetailsDTO> landDetails;
+    private List<CropDTO> crops;
+
+    // Custom setters to enforce null checks
+    public void setGender(Gender gender) {
+        if (gender == null) {
+            throw new IllegalArgumentException("Gender cannot be null");
+        }
+        this.gender = gender;
+    }
+
+    public void setEducation(Education education) {
+        if (education == null) {
+            throw new IllegalArgumentException("Education cannot be null");
+        }
+        this.education = education;
+    }
+
+    public void setDocument(Document document) {
+        if (document == null) {
+            throw new IllegalArgumentException("Document type cannot be null");
+        }
+        this.document = document;
+    }
+
+    public void setPortalRole(PortalRole portalRole) {
+        if (portalRole == null) {
+            throw new IllegalArgumentException("Portal role cannot be null");
+        }
+        this.portalRole = portalRole;
+    }
+
+    public void setPortalAccess(PortalAccess portalAccess) {
+        if (portalAccess == null) {
+            throw new IllegalArgumentException("Portal access cannot be null");
+        }
+        this.portalAccess = portalAccess;
+    }
 }

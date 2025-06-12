@@ -46,15 +46,7 @@ public class UserDTO {
     @NotBlank(message = "Time zone is required.")
     private String timeZone;
 
-    // Optional: auto-filled fields (if you want to support them as DTO-level mapping)
+    // Optional: for auto-filled fields
     private String district;
     private String postOffice;
-
-    public String getEmail() {
-        return email;
-    }
-
-    public String getPhoneNumber() {
-        return phoneNumber;
-    }
 }

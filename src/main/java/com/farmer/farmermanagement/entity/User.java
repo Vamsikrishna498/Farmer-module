@@ -1,13 +1,14 @@
 package com.farmer.farmermanagement.entity;
 
-import java.time.LocalDate;
-
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
+
 @Entity
 @Table(name = "users")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -30,7 +31,7 @@ public class User {
     private String phoneNumber;
 
     @Column(nullable = false)
-    private String password; // Ensure this is hashed before saving
+    private String password; // Ensure this is hashed when storing
 
     @Column
     private LocalDate dateOfBirth; // Prefer LocalDate over String

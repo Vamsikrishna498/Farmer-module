@@ -1,3 +1,4 @@
+
 //package com.farmer.farmermanagement.service;
 //
 //import com.farmer.farmermanagement.dto.BankDetailsDto;
@@ -51,3 +52,4 @@
 //        bankDetailsRepository.delete(bankDetails);
 //    }
 //}
+

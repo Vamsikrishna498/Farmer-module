@@ -1,134 +1,102 @@
 package com.farmer.farmermanagement.service;
 
-import com.farmer.farmermanagement.dto.BankDetailsDto;
-import com.farmer.farmermanagement.dto.FarmerDto;
-import com.farmer.farmermanagement.dto.LandDetailsDto;
-import com.farmer.farmermanagement.entity.BankDetails;
-import com.farmer.farmermanagement.entity.Crop;
-import com.farmer.farmermanagement.entity.Farmer;
-import com.farmer.farmermanagement.entity.LandDetails;
+import com.farmer.farmermanagement.dto.*;
+import com.farmer.farmermanagement.entity.*;
+import com.farmer.farmermanagement.enums.BankName;
 import com.farmer.farmermanagement.exception.FarmerNotFoundException;
-import com.farmer.farmermanagement.mapper.AddressMapper;
-import com.farmer.farmermanagement.mapper.CropMapper;
 import com.farmer.farmermanagement.mapper.FarmerMapper;
-import com.farmer.farmermanagement.repository.BankDetailsRepository;
-import com.farmer.farmermanagement.repository.CropRepository;
-import com.farmer.farmermanagement.repository.FarmerRepository;
-import com.farmer.farmermanagement.repository.LandDetailsRepository;
-import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import com.farmer.farmermanagement.repository.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
-@Transactional
 public class FarmerService {
 
-    private final FarmerRepository farmerRepository;
-    private final BankDetailsRepository bankDetailsRepository;
-    private final LandDetailsRepository landDetailsRepository;
-    private final CropRepository cropRepository;
-    private final FarmerMapper farmerMapper;
-    private final CropMapper cropMapper;
-    private final AddressMapper addressMapper;
+    @Autowired
+    private FarmerRepository farmerRepository;
 
-    public FarmerDto registerFarmer(@Valid FarmerDto farmerDto) {
-        Farmer farmer = farmerMapper.toEntity(farmerDto);
+    @Autowired
+    private BankDetailsRepository bankDetailsRepository;
 
-        if (farmer.getCrops() != null) {
-            farmer.getCrops().forEach(crop -> crop.setFarmer(farmer));
+    @Autowired
+    private LandDetailsRepository landDetailsRepository;
+
+    @Autowired
+    private CropRepository cropRepository;
+
+    public FarmerDTO saveFarmer(FarmerDTO dto) {
+        Farmer farmer = FarmerMapper.toEntity(dto);
+
+        // Save Farmer first to generate ID
+        farmer = farmerRepository.save(farmer);
+
+        // Save bank details
+        if (dto.getBankDetails() != null) {
+            List<BankDetails> bankEntities = new ArrayList<>();
+            for (BankDetailsDTO bdDto : dto.getBankDetails()) {
+                BankDetails bankDetails = new BankDetails();
+                bankDetails.setFarmer(farmer);
+                bankDetails.setAccountNumber(bdDto.getAccountNumber());
+                bankDetails.setBankName(BankName.valueOf(bdDto.getBankName()));
+                bankDetails.setIfscCode(bdDto.getIfscCode());
+                bankEntities.add(bankDetailsRepository.save(bankDetails));
+            }
+            farmer.setBankDetails(bankEntities);
         }
 
-        if (farmer.getBankDetails() != null) {
-            farmer.getBankDetails().setFarmer(farmer);
+        // Save land details
+        if (dto.getLandDetails() != null) {
+            List<LandDetails> landEntities = new ArrayList<>();
+            for (LandDetailsDTO ldDto : dto.getLandDetails()) {
+                LandDetails landDetails = new LandDetails();
+                landDetails.setFarmer(farmer);
+                landDetails.setArea(ldDto.getArea());
+                landDetails.setSurveyNumber(ldDto.getSurveyNumber());
+                landEntities.add(landDetailsRepository.save(landDetails));
+            }
+            farmer.setLandDetails(landEntities);
         }
 
-        if (farmer.getLandDetails() != null) {
-            farmer.getLandDetails().setFarmer(farmer);
+        // Save crops
+        if (dto.getCrops() != null) {
+            List<Crop> cropEntities = new ArrayList<>();
+            for (CropDTO cropDto : dto.getCrops()) {
+                Crop crop = new Crop();
+                crop.setFarmer(farmer);
+                crop.setCropName(cropDto.getCropName());
+                crop.setCropType(cropDto.getCropType());
+                cropEntities.add(cropRepository.save(crop));
+            }
+            farmer.setCrops(cropEntities);
         }
 
+        // Final save after setting children
         Farmer savedFarmer = farmerRepository.save(farmer);
-        return farmerMapper.toDto(savedFarmer);
+
+        return FarmerMapper.toDto(savedFarmer);
     }
 
-    public FarmerDto updateFarmer(Long id, @Valid FarmerDto farmerDto) {
-        Farmer existing = farmerRepository.findById(id)
-                .orElseThrow(() -> new FarmerNotFoundException("Farmer not found with ID: " + id));
-
-        // Update core fields
-        existing.setFirstName(farmerDto.getFirstName());
-        existing.setMiddleName(farmerDto.getMiddleName());
-        existing.setLastName(farmerDto.getLastName());
-        existing.setPhoneNumber(farmerDto.getPhoneNumber());
-        existing.setDateOfBirth(farmerDto.getDateOfBirth());
-        existing.setGender(farmerDto.getGender());
-        existing.setEducation(farmerDto.getEducation());
-        existing.setDocument(farmerDto.getDocument());
-        existing.setPortalAccess(farmerDto.getPortalAccess());
-        existing.setPortalRole(farmerDto.getPortalRole());
-        existing.setFarmerType(farmerDto.getFarmerType());
-
-        existing.setAddress(addressMapper.toEntity(farmerDto.getAddress()));
-
-        BankDetailsDto bankDetailsDto = farmerDto.getBankDetails();
-        if (bankDetailsDto != null) {
-            BankDetails bankDetails = existing.getBankDetails();
-            bankDetails.setAccountNumber(bankDetailsDto.getAccountNumber());
-            bankDetails.setBankName(bankDetailsDto.getBankName().toString());
-            bankDetails.setIfscCode(bankDetailsDto.getIfscCode());
-            bankDetails.setFarmer(existing);
-        }
-
-        LandDetailsDto landDetailsDto = farmerDto.getLandDetails();
-        if (landDetailsDto != null) {
-            LandDetails landDetails = existing.getLandDetails();
-            landDetails.setBorewellDischarge(landDetailsDto.getBorewellDischarge());
-            landDetails.setBorewellLocation(landDetailsDto.getBorewellLocation());
-            landDetails.setCropType(landDetailsDto.getCropType());
-            landDetails.setGeoTag(landDetailsDto.getGeoTag());
-            landDetails.setIrrigationSource(landDetailsDto.getIrrigationSource());
-            landDetails.setLandSize(landDetailsDto.getLandSize());
-            landDetails.setSoilTest(landDetailsDto.getSoilTest());
-            landDetails.setSoilTestCertificate(landDetailsDto.getSoilTestCertificate());
-            landDetails.setLatitude(landDetailsDto.getLatitude());
-            landDetails.setLongitude(landDetailsDto.getLongitude());
-            landDetails.setFarmer(existing);
-        }
-
-        // Update crops
-        if (farmerDto.getCrops() != null) {
-            existing.getCrops().clear();
-            existing.getCrops().addAll(farmerDto.getCrops().stream().map(cropDto -> {
-                Crop crop = cropMapper.toEntity(cropDto);
-                crop.setFarmer(existing);
-                return crop;
-            }).toList());
-        }
-
-        Farmer updated = farmerRepository.save(existing);
-        return farmerMapper.toDto(updated);
-    }
-
-    public FarmerDto getFarmerById(Long id) {
+    public FarmerDTO getFarmerById(Long id) {
         Farmer farmer = farmerRepository.findById(id)
-                .orElseThrow(() -> new FarmerNotFoundException("Farmer not found with ID: " + id));
-        return farmerMapper.toDto(farmer);
+                .orElseThrow(() -> new FarmerNotFoundException("Farmer not found with id: " + id));
+        return FarmerMapper.toDto(farmer);
     }
 
-    public List<FarmerDto> getAllFarmers() {
-        return farmerRepository.findAll().stream()
-                .map(farmerMapper::toDto)
-                .collect(Collectors.toList());
+    public List<FarmerDTO> getAllFarmers() {
+        List<Farmer> farmers = farmerRepository.findAll();
+        List<FarmerDTO> dtos = new ArrayList<>();
+        for (Farmer farmer : farmers) {
+            dtos.add(FarmerMapper.toDto(farmer));
+        }
+        return dtos;
     }
 
     public void deleteFarmer(Long id) {
         if (!farmerRepository.existsById(id)) {
-            throw new EntityNotFoundException("Farmer not found with ID: " + id);
+            throw new FarmerNotFoundException("Cannot delete. Farmer not found with id: " + id);
         }
         farmerRepository.deleteById(id);
     }

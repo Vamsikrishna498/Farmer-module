@@ -13,6 +13,7 @@ import com.farmer.farmermanagement.repository.BankDetailsRepository;
 import com.farmer.farmermanagement.repository.CropRepository;
 import com.farmer.farmermanagement.repository.FarmerRepository;
 import com.farmer.farmermanagement.repository.LandDetailsRepository;
+import com.farmer.farmermanagement.service.FarmerService;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -1,4 +1,4 @@
-package com.farmer.farmermanagement.service;
+package com.farmer.farmermanagement;
 
 import com.farmer.farmermanagement.dto.LandDetailsDTO;
 import com.farmer.farmermanagement.entity.Farmer;
@@ -11,6 +11,8 @@ import com.farmer.farmermanagement.exception.ResourceNotFoundException;
 import com.farmer.farmermanagement.mapper.LandDetailsMapper;
 import com.farmer.farmermanagement.repository.FarmerRepository;
 import com.farmer.farmermanagement.repository.LandDetailsRepository;
+import com.farmer.farmermanagement.service.LandDetailsService;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

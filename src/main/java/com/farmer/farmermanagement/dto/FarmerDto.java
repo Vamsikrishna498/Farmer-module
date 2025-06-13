@@ -1,6 +1,13 @@
 package com.farmer.farmermanagement.dto;
 
-import com.farmer.farmermanagement.enums.*;
+import com.farmer.farmermanagement.enums.Document;
+import com.farmer.farmermanagement.enums.Education;
+import com.farmer.farmermanagement.enums.Gender;
+import com.farmer.farmermanagement.enums.PortalAccess;
+import com.farmer.farmermanagement.enums.PortalRole;
+
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -11,7 +18,6 @@ import java.util.List;
 @Getter
 @Setter
 public class FarmerDTO {
-
     private Long id;
 
     @NotBlank(message = "Photo is required")
@@ -26,7 +32,7 @@ public class FarmerDTO {
     private String middleName;
     private String lastName;
 
-    @NotNull(message = "Gender is required")
+    @NotNull(message = "Gender is required") 
     private Gender gender;
 
     @NotBlank(message = "Nationality is required")
@@ -34,10 +40,10 @@ public class FarmerDTO {
 
     @NotNull(message = "Date of birth is required")
     @Past(message = "Date of birth must be in the past")
-    private Date dateOfBirth;
+    private Date dob;
 
     @Pattern(regexp = "\\d{10}", message = "Contact number must be exactly 10 digits")
-    private String phoneNumber;
+    private String contactNumber;
 
     private String relationshipType;
 
@@ -70,8 +76,12 @@ public class FarmerDTO {
     @Pattern(regexp = "\\d{5,6}", message = "Zipcode must be 5 or 6 digits")
     private String zipcode;
 
-    @NotNull(message = "Education is required")
+    @NotNull(message = "Education is required") 
     private Education education;
+
+    @Enumerated(EnumType.STRING)
+    @NotNull(message = "Document type is required") 
+    private Document document;
 
     @Min(value = 0, message = "Farming experience cannot be negative")
     private int farmingExperience;
@@ -79,28 +89,13 @@ public class FarmerDTO {
     @DecimalMin(value = "0.0", inclusive = true, message = "Net income cannot be negative")
     private double netIncome;
 
-    @NotNull(message = "Document type is required")
-    private Document document;
-
-    @NotBlank(message = "Document path is required")
-    private String documentPath;
-
-    @NotBlank(message = "Farmer type is required")
-    private String farmerType;
-
-    @NotNull(message = "Portal role is required")
     private PortalRole portalRole;
-
-    @NotNull(message = "Portal access is required")
     private PortalAccess portalAccess;
 
-    private AddressDto address;
+    private List<Long> cropIds; 
+    private Long bankDetailsId; 
+    private Long landDetailsId; 
 
-    private List<BankDetailsDTO> bankDetails;
-    private List<LandDetailsDTO> landDetails;
-    private List<CropDTO> crops;
-
-    // Custom setters to enforce null checks
     public void setGender(Gender gender) {
         if (gender == null) {
             throw new IllegalArgumentException("Gender cannot be null");
@@ -120,19 +115,5 @@ public class FarmerDTO {
             throw new IllegalArgumentException("Document type cannot be null");
         }
         this.document = document;
-    }
-
-    public void setPortalRole(PortalRole portalRole) {
-        if (portalRole == null) {
-            throw new IllegalArgumentException("Portal role cannot be null");
-        }
-        this.portalRole = portalRole;
-    }
-
-    public void setPortalAccess(PortalAccess portalAccess) {
-        if (portalAccess == null) {
-            throw new IllegalArgumentException("Portal access cannot be null");
-        }
-        this.portalAccess = portalAccess;
     }
 }

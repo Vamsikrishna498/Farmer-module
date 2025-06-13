@@ -15,7 +15,6 @@ import java.io.InputStream;
 @Configuration
 public class FirebaseConfig {
 
-<<<<<<< HEAD
     // Bean to initialize FirebaseApp
     @Bean
     FirebaseApp firebaseApp() throws IOException {
@@ -44,27 +43,4 @@ public class FirebaseConfig {
         return FirebaseAuth.getInstance(firebaseApp());
     }
 }
-=======
-    @Bean
-    public FirebaseApp firebaseApp() throws IOException {
-        if (FirebaseApp.getApps().isEmpty()) {
-            Resource resource = new ClassPathResource("firebase-service-account.json");
-            if (!resource.exists()) {
-                throw new IOException("Firebase service account file not found in classpath.");
-            }
-            InputStream serviceAccount = resource.getInputStream();
-            FirebaseOptions options = FirebaseOptions.builder()
-                    .setCredentials(GoogleCredentials.fromStream(serviceAccount))
-                    .build();
-            return FirebaseApp.initializeApp(options);
-        }
-        return FirebaseApp.getInstance();
-    }
-
-    @Bean
-    public FirebaseAuth firebaseAuth() throws IOException {
-        return FirebaseAuth.getInstance(firebaseApp());
-    }
-}
-
->>>>>>> b8dc8b5a4679b70462404f7421f0ecbebefd2057
+   
